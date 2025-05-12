@@ -18,13 +18,10 @@
 
   <modules>
     <module>server</module>
-    <module>webapp</module>
-  </modules>
-
-<modules>
-    <module>server</module>
+    <module>webapp</module>      
     <module>webapps-2</module>
   </modules>
+
          
   <distributionManagement>
     <site>
