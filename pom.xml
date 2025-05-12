@@ -21,6 +21,11 @@
     <module>webapp</module>
   </modules>
 
+<modules>
+    <module>server</module>
+    <module>webapps-2</module>
+  </modules>
+         
   <distributionManagement>
     <site>
       <id>site-server</id>
