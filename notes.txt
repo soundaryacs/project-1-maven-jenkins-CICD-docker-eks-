@@ -1,0 +1,195 @@
+What is Tomcat?
+
+Tomcat is an open-source web server and servlet. The Apache Software Foundation has developed it. It is used widely for hosting Java-based applications on the web. It is built on Java technologies and implements the Java Servlet and JavaServer Pages (JSP)
+
+################Tomcat#########
+
+#Install tomcat 
+
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.86/bin/apache-tomcat-9.0.86.tar.gz
+
+#untar  tar -xvzf <apachetomcat-tarfile>
+
+
+#Rename it if required   mv <apachetomcat-tarfile> tomcat
+
+tomcat/bin -----sh startup.sh   --to start
+                sh shutdown.sh  -- to stop
+
+default port number of tomcat is 8080
+#to change port number ------ /conf/server.xml
+
+war file should be placed in -------------/tomcat/webapps 
+
+#####################################################
+
+
+custom manager app tomcat --------find / -name context.xml
+
+----after finding the file need to open with vi related manager files 
+
+example -- vi /root/tomcat/webapps/host-manager/META-INF/context.xml
+
+add comment it below two line <!--     -->
+ ex: <!--  <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+     allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" /> -->
+ 
+2.vi /root/tomcat/webapps/manager/META-INF/context.xml
+
+<!--<Valve className="org.apache.catalina.valves.RemoteAddrValve"
+  allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" /> -->
+
+#### login process #########
+#########################################################
+required username and password to login
+
+ tomcat/conf/tomcat-user.xml 
+
+vi tomcat-users.xml and add custom username password 
+
+#ADD BELOW CONTENT   
+
+  <role rolename="manager-gui"/>
+  <role rolename="manager-script"/>
+  <role rolename="manager-jmx"/>
+  <role rolename="manager-status"/>
+  <user username="admin" password="admin" roles="manager-gui, manager-script, manager-jmx, manager-status"/>
+  <user username="deployer" password="deployer" roles="manager-script"/>
+  <user username="tomcat" password="s3cret" roles="manager-gui"/>
+
+
+
+
+
+### Maven project Job: CICD deployer on Tomcat
+step-1 need to configure Maven and jenkins paths in global tool configuration
+
+/usr/share/maven                              #MAVEN_HOME
+/usr/lib/jvm/java-17-amazon-corretto.x86_64   #JAVA_HOME
+
+step-2
+
+plugin stageview
+plugin maven
+plugin Deployment container 
+
+step-3:
+Dashboard --->Manage Jenkins --->Credentials --->System -- >Global credentials (unrestricted)
+need to configure credentials --username : deployer password deployer   :--- reference from ( <user username="deployer" password="deployer" roles="manager-script"/>)
+
+step-4 create maven job and give git url for source code to build 
+
+step-5 give build actions goals like test, install etc..
+
+step-6 In postbuild actions select war/ear file to give path of War --path **/*.war 
+
+step-7 we need to add container (tomcat) we have to give configured credentials of tomcat and give url of tomcat
+
+webhook 
+http://34.228.189.137:8080/github-webhook/
+
+we have to give jenkins URL as payload url
+
+
+
+"CI/CD----Maven job---Javaproject"
+####pipelinejob:example
+
+pipeline {
+    agent any
+
+    stages {
+        stage('stage-1') {
+            steps {
+                git branch: 'main', url: 'https://github.com/CloudTechDevOps/project-1-maven-jenkins-CICD-docker-eks-.git'
+            }
+        }
+   
+        stage('clean') {
+            steps {
+              sh  'mvn clean'
+            }
+        }
+        
+        stage('test') {
+            steps {
+              sh  'mvn test'
+            }
+        }
+        stage('install') {
+            steps {
+               sh  'mvn install'
+            }
+        }
+        
+        stage('deployment') {
+            steps {
+                
+              deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://54.91.1.181:8081/')], contextPath: null, war: 'webapp/target/*.war'
+
+            }
+        }
+        
+    }
+}
+
+Note : while generating the scrip we have to give path of ear/war file should be -- webapp/target/*.war  (# this is as per my project folder reference )
+
+
+2 modules deployed the same pipeline
+=======================================
+
+pipeline {
+    agent {
+        label 'projects-list'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/soundaryacs/project-1-maven-jenkins-CICD-docker-eks-.git'
+            }
+        }
+
+        stage('Clean') {
+            steps {
+                sh 'mvn clean'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Install') {
+            steps {
+                sh 'mvn install'
+            }
+        }
+
+        stage('Deployment') {
+            steps {
+                // Deploy webapp WAR
+                deploy adapters: [
+                    tomcat9(
+                        credentialsId: 'tomcat',
+                        path: '',
+                        url: 'http://54.92.193.220:8081/'
+                    )
+                ], contextPath: null, war: 'webapp/target/webapp.war'
+
+                // Deploy webapps-2 WAR
+                deploy adapters: [
+                    tomcat9(
+                        credentialsId: 'tomcat',
+                        path: '',
+                        url: 'http://54.92.193.220:8081/'
+                    )
+                ], contextPath: null, war: 'webapps-2/target/webapps-2.war'
+            }
+        }
+    }
+}
+
