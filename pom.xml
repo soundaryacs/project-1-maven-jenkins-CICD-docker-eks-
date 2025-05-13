@@ -19,7 +19,7 @@
   <modules>
     <module>server</module>
     <module>webapp</module>      
-    <module>webapps-2</module>
+<!--     <module>webapps-2</module> -->
   </modules>
 
          
